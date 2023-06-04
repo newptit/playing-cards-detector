@@ -7,6 +7,9 @@
 
 
 # Import necessary packages
+import random
+import string
+import os
 import numpy as np
 import cv2
 import time
@@ -38,6 +41,25 @@ CARD_MIN_AREA = 25000
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 ### Structures to hold query card and train card information ###
+
+def saveImg(image):
+    # Generate a random name
+    random_name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+    # Specify the file extension
+    extension = '.jpg'
+
+    # Create the folder if it doesn't exist
+    folder_name = 'images'
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+    # Concatenate the folder name, random name, and extension
+    file_name = os.path.join(folder_name, random_name + extension)
+
+    # Save the image
+    cv2.imwrite(file_name, image)
+
 
 class Query_card:
     """Structure to store information about query cards in the camera image."""
@@ -225,7 +247,7 @@ def preprocess_card(contour, image):
         qCard.rank_img = Qrank_sized
         cv2.imshow('rank img', qCard.rank_img)
 
-    # Find suit contour and bounding rectangle, isolate and find largest contour
+    # Find suit contour and bounding rectangle, isolate and find
     Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     Qsuit_cnts = sorted(Qsuit_cnts, key=cv2.contourArea,reverse=True)
     
