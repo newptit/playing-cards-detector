@@ -12,7 +12,6 @@ import string
 import os
 import numpy as np
 import cv2
-import time
 
 ### Constants ###
 
@@ -103,8 +102,8 @@ def load_ranks(filepath):
     train_ranks = []
     i = 0
 
-    for Rank in ['Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
-                 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King']:
+    for Rank in ['A', '2', '3', '4', '5', '6', '7',
+                 '8', '9', '10', 'J', 'Q', 'K']:
         train_ranks.append(Train_ranks())
         train_ranks[i].name = Rank
         filename = Rank + '.jpg'
@@ -121,7 +120,7 @@ def load_suits(filepath):
     train_suits = []
     i = 0
 
-    for Suit in ['Spades', 'Diamonds', 'Clubs', 'Hearts']:
+    for Suit in ['S', 'D', 'C', 'H']:
         train_suits.append(Train_suits())
         train_suits[i].name = Suit
         filename = Suit + '.jpg'
@@ -238,11 +237,11 @@ def preprocess_card(contour, image):
         thresh_level = 1
     retval, query_thresh = cv2.threshold(Qcorner_zoom, thresh_level, 255, cv2.THRESH_BINARY_INV)
 
-    # Split in to top and bottom half (top shows rank, bottom shows suit)
+    # Split into top and bottom half (top shows rank, bottom shows suit)
     Qrank = query_thresh[40:385, 0:]
     Qsuit = query_thresh[385:, 0:]
 
-    # Find rank contour and bounding rectangle, isolate and find largest contour
+    # Find rank contour and bounding rectangle, isolate and find the largest contour
     Qrank_cnts, hier = cv2.findContours(Qrank, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     Qrank_cnts = sorted(Qrank_cnts, key=cv2.contourArea, reverse=True)
 
@@ -290,7 +289,6 @@ def match_card(qCard, train_ranks, train_suits):
         # Difference the query card rank image from each of the train rank images,
         # and store the result with the least difference
         for Trank in train_ranks:
-
             diff_img = cv2.absdiff(qCard.rank_img, Trank.img)
             rank_diff = int(np.sum(diff_img) / 255)
 
@@ -332,8 +330,7 @@ def draw_results(image, qCard):
 
     rank_name = qCard.best_rank_match
     suit_name = qCard.best_suit_match
-    print(rank_name, suit_name)
-    name = rank_name + ' ' + suit_name;
+    name = rank_name + suit_name
 
     # Draw card name twice, so letters have black outline
     cv2.putText(image, (rank_name + ' of'), (x - 60, y - 10), font, 1, (0, 0, 0), 3, cv2.LINE_AA)

@@ -6,6 +6,11 @@ import Cards
 
 
 class MainThread:
+    # sort the cards base on y and x of list tuple card (x, y, name)
+    def sort_cards(self, cards):
+        return sorted(cards, key=lambda card: (card[1], card[0]))
+        return cards
+
     def run(self):
         # Load the screenshot image
         screenshot = cv2.imread('screenshot4.jpg')
@@ -36,14 +41,13 @@ class MainThread:
 
         card_contours = []
         cards = []
-        result = [];
+        result = []
         k = 0
         for contour in contours:
             area = cv2.contourArea(contour)
             # w = 162, h = 239
             x, y, w, h = cv2.boundingRect(contour)
             aspect_ratio = float(w) / h
-            print(area, aspect_ratio)
 
             if min_card_area < area < max_card_area and min_aspect_ratio < aspect_ratio < max_aspect_ratio:
                 # Check if the x, y exists in the array
@@ -76,10 +80,7 @@ class MainThread:
 
         # Display the screenshot with bounding rectangles
         print(result)
-        Cards.saveImg(screenshot)
-        cv2.imshow('Detected Cards', screenshot)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        print(self.sort_cards(result))
 
 
 MainThread().run()
