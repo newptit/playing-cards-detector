@@ -13,6 +13,11 @@ import os
 import numpy as np
 import cv2
 
+
+def custom_round(x, base=5):
+    return base * round(x / base)
+
+
 ### Constants ###
 
 # Adaptive threshold levels
@@ -206,25 +211,22 @@ def preprocess_card(contour, image):
 
     qCard.contour = contour
 
-    # Find perimeter of card and use it to approximate corner points
-    peri = cv2.arcLength(contour, True)
-    approx = cv2.approxPolyDP(contour, 0.01 * peri, True)
-    pts = np.float32(approx)
-    qCard.corner_pts = pts
-
     # Find width and height of card's bounding rectangle
     x, y, w, h = cv2.boundingRect(contour)
     qCard.width, qCard.height = w, h
 
     # Find center point of card by taking x and y average of the four corners.
-    average = np.sum(pts, axis=0) / len(pts)
-    cent_x = int(average[0][0])
-    cent_y = int(average[0][1])
+    cent_x = int(x + w / 2)
+    cent_y = int(y + h / 2)
     qCard.center = [cent_x, cent_y]
 
-    # Warp card into 200x300 flattened image using perspective transform
-    qCard.warp = flattener(image, pts, w, h)
+    # Crop the image using the coordinates
+    cropped_image = image[y:y + h, x:x + w]
 
+    # Resize the cropped image to 200x300 pixels
+    resized_image = cv2.resize(cropped_image, (200, 300))
+
+    qCard.warp = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     # Grab corner of warped card image and do a 4x zoom
     # Qcorner = qCard.warp[0:CORNER_HEIGHT, 0:CORNER_WIDTH]
     Qcorner = qCard.warp[0:CORNER_HEIGHT, 0:CORNER_WIDTH]
@@ -252,7 +254,7 @@ def preprocess_card(contour, image):
         Qrank_roi = Qrank[y1:y1 + h1, x1:x1 + w1]
         Qrank_sized = cv2.resize(Qrank_roi, (RANK_WIDTH, RANK_HEIGHT), 0, 0)
         qCard.rank_img = Qrank_sized
-        cv2.imshow('rank img', qCard.rank_img)
+        # saveImg(qCard.rank_img)
 
     # Find suit contour and bounding rectangle, isolate and find
     Qsuit_cnts, hier = cv2.findContours(Qsuit, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -265,7 +267,7 @@ def preprocess_card(contour, image):
         Qsuit_roi = Qsuit[y2:y2 + h2, x2:x2 + w2]
         Qsuit_sized = cv2.resize(Qsuit_roi, (SUIT_WIDTH, SUIT_HEIGHT), 0, 0)
         qCard.suit_img = Qsuit_sized
-        cv2.imshow('suite img', qCard.suit_img)
+        # saveImg(qCard.suit_img)
 
     return qCard
 
@@ -333,20 +335,17 @@ def draw_results(image, qCard):
     name = rank_name + suit_name
 
     # Draw card name twice, so letters have black outline
-    cv2.putText(image, (rank_name + ' of'), (x - 60, y - 10), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
-    cv2.putText(image, (rank_name + ' of'), (x - 60, y - 10), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
-
-    cv2.putText(image, suit_name, (x - 60, y + 25), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
-    cv2.putText(image, suit_name, (x - 60, y + 25), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
+    cv2.putText(image, (rank_name + suit_name), (x - 60, y), font, 1, (0, 0, 0), 3, cv2.LINE_AA)
+    cv2.putText(image, (rank_name + suit_name), (x - 60, y), font, 1, (50, 200, 200), 2, cv2.LINE_AA)
 
     # Can draw difference value for troubleshooting purposes
     # (commented out during normal operation)
-    # r_diff = str(qCard.rank_diff)
-    # s_diff = str(qCard.suit_diff)
+    r_diff = str(qCard.rank_diff)
+    s_diff = str(qCard.suit_diff)
     # cv2.putText(image,r_diff,(x+20,y+30),font,0.5,(0,0,255),1,cv2.LINE_AA)
     # cv2.putText(image,s_diff,(x+20,y+50),font,0.5,(0,0,255),1,cv2.LINE_AA)
 
-    return x, y, name
+    return x, custom_round(y, 20), name
 
 
 def flattener(image, pts, w, h):
